@@ -1,5 +1,8 @@
 # py_audio2face
 
+备注：主分支使用的是绝对目录，所以没法喂进sitepack目录下替换使用，只能作为代码模块。在分支中进行了相对目录修正
+
+
 ## Overview
 
 This Python script leverages the headless mode of [Audio2Face](https://www.nvidia.com/en-us/omniverse/apps/audio2face/) to generate lip and face animations for characters. 

@@ -2,6 +2,12 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import os
 
+# from py_audio2face.audio2face import Audio2Face
+
+import sys
+sys.path.append(".")
+sys.path.append("./py_audio2face")
+
 from py_audio2face.audio2face import Audio2Face
 
 class Audio2FaceApp(tk.Tk):
@@ -23,6 +29,7 @@ class Audio2FaceApp(tk.Tk):
             "a2e_contrast": 1.0,
         }
 
+        self.settings_entries = {}
 
         # Setup UI
         self.setup_ui()
@@ -77,11 +84,13 @@ class Audio2FaceApp(tk.Tk):
         self.settings_frame = ttk.LabelFrame(self.right_frame, text="设置参数", padding="10")
         self.settings_frame.pack(fill='x', expand=True, pady=10)
 
-        for key, value in self.default_settings.items():
-            ttk.Label(self.settings_frame, text=f"{key}:").pack(anchor='nw')
+        for key in self.default_settings.keys():
+            ttk.Label(self.settings_frame, text=f"{key}:").pack(anchor='nw', padx=5, pady=2)
             entry = ttk.Entry(self.settings_frame, width=15)
-            entry.insert(0, str(value))
+            entry.insert(0, str(self.default_settings[key]))
             entry.pack(anchor='nw', pady=2)
+            self.settings_entries[key] = entry  # 保存输入框引用到字典
+
 
 
         
@@ -111,7 +120,21 @@ class Audio2FaceApp(tk.Tk):
         self.right_frame.config(width=350)
 
 
-        
+    def update_settings(self):
+        for key, entry in self.settings_entries.items():
+            try:
+                # 更新设置字典中的值，根据实际情况转换类型
+                # TODO: 感觉处理不阳间
+                self.default_settings[key] = type(self.default_settings[key])(entry.get())
+            except ValueError as e:
+                messagebox.showerror("设置错误", f"无法更新设置 '{key}': {e}")
+                continue
+
+        self.default_settings["a2f_instance"] = "/World/audio2face/CoreFullface"
+
+        print(self.default_settings)
+
+
     def browse_output_directory(self):
         dirpath = filedialog.askdirectory()
         if dirpath:
@@ -136,23 +159,24 @@ class Audio2FaceApp(tk.Tk):
             self.file_entry.insert(0, filename)  # 只插入文件名
 
 
-    def execute(self):
-        # Get file and directory paths from entries
-        file_path = self.file_entry.get()
-        dir_path = self.dir_entry.get()
-
-        if file_path:
-            self.process_single_file(file_path)
-        if dir_path:
-            self.process_directory(dir_path)
 
     def execute_single(self):
-        file_path = self.file_entry.get()
+
+        self.update_settings()
+
+        file_dir = self.dir_entry.get()
+        file_name = self.file_entry.get()
+
+        file_path = os.path.join(file_dir,file_name)
+
         output_dir = self.output_dir_entry.get()
         if file_path and output_dir:
             self.process_single_file(file_path, output_dir)
 
     def execute_batch(self):
+
+        self.update_settings()
+
         dir_path = self.dir_entry.get()
         output_dir = self.output_dir_entry.get()
         if dir_path and output_dir:
@@ -163,9 +187,37 @@ class Audio2FaceApp(tk.Tk):
         # Here you can use your a2f.audio2face_single with proper parameters
         print("Processing single file:", file_path)
 
+        self.a2f.init_a2f()
+
+        self.a2f.set_root_path(file_path)
+        self.a2f.set_track(file_path)
+
+        output_path = os.path.join(output_dir,os.path.basename(file_path))
+
+
+        if not os.path.isabs(output_path):
+            output_path = os.path.join(os.getcwd(), output_path)
+
+        if not os.path.isdir(os.path.dirname(output_path)):
+            print(f"creating output dir: {output_path}")
+            os.makedirs(os.path.dirname(output_path))
+
+
+        self.a2f.generate_emotion_keys(self.default_settings)
+
+        self.a2f.export_blend_shape(output_path=output_path)
+
+        # print(self.a2f.get_emotion())
+
+        messagebox.showinfo("转换完成", f"文件 '{os.path.basename(file_path)}' 已转换完成")
+
+
     def process_directory(self, dir_path, output_dir):
         # Here you can iterate over the directory files and apply audio2face_folder logic
         print("Processing directory:", dir_path)
+        self.a2f.audio2face_folder(dir_path, output_dir, fps=60, emotion=True)
+
+        messagebox.showinfo("转换完成", f"文件夹 '{os.path.basename(dir_path)}' 已转换完成")
 
 
 

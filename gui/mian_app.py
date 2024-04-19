@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import os
+import tqdm
 
 # from py_audio2face.audio2face import Audio2Face
 
@@ -9,6 +10,8 @@ sys.path.append(".")
 sys.path.append("./py_audio2face")
 
 from py_audio2face.audio2face import Audio2Face
+
+from py_audio2face import utils
 
 class Audio2FaceApp(tk.Tk):
     def __init__(self):
@@ -130,6 +133,7 @@ class Audio2FaceApp(tk.Tk):
                 messagebox.showerror("设置错误", f"无法更新设置 '{key}': {e}")
                 continue
 
+        # 硬编码
         self.default_settings["a2f_instance"] = "/World/audio2face/CoreFullface"
 
         print(self.default_settings)
@@ -215,7 +219,40 @@ class Audio2FaceApp(tk.Tk):
     def process_directory(self, dir_path, output_dir):
         # Here you can iterate over the directory files and apply audio2face_folder logic
         print("Processing directory:", dir_path)
-        self.a2f.audio2face_folder(dir_path, output_dir, fps=60, emotion=True)
+        # self.a2f.audio2face_folder(dir_path, output_dir, fps=60, emotion=True)
+
+
+        self.a2f.init_a2f()
+        self.a2f.set_root_path(dir_path)
+
+        # 设置自动填充情绪
+        # print(self.a2f.a2e_set_settings_from_dict(settings=self.default_settings))
+        # print(self.a2f.set_auto_emotion())
+
+        audio_files = utils.get_files_in_dir(dir_path, [".wav", ".mp3"])
+        audio_files_tqdm = tqdm.tqdm(audio_files)
+
+        for af in audio_files_tqdm:
+            audio_files_tqdm.set_description(f"Processing {af}")
+
+            self.a2f.set_track(af)
+
+            # outfile name will be base file name of af_a2f_animation
+            outfile_name, ext = os.path.basename(af).rsplit(".", 1)
+            outfile_name = f"{output_dir}/{outfile_name}_a2f_animation"
+
+            # avoid non absolute paths
+            if not os.path.isabs(outfile_name):
+                outfile_name = os.path.join(os.getcwd(), outfile_name)
+
+            if not os.path.isdir(os.path.dirname(outfile_name)):
+                print(f"creating output dir: {outfile_name}")
+                os.makedirs(os.path.dirname(outfile_name))
+
+            self.a2f.generate_emotion_keys(self.default_settings)
+            self.a2f.export_blend_shape(output_path=outfile_name)
+            print(self.a2f.get_emotion())
+
 
         messagebox.showinfo("转换完成", f"文件夹 '{os.path.basename(dir_path)}' 已转换完成")
 

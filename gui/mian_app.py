@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+import sv_ttk
 import os
 import tqdm
 
@@ -37,8 +38,10 @@ class Audio2FaceApp(tk.Tk):
         self.setup_ui()
 
     def setup_ui(self):
-        self.style = ttk.Style(self)
-        self.style.theme_use('clam')
+        # self.style = ttk.Style(self)
+        # self.style.theme_use('clam')
+
+        sv_ttk.set_theme("light")
 
         # Creating frames for layout
         self.left_frame = ttk.Frame(self, padding="10")

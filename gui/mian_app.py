@@ -10,13 +10,12 @@ sys.path.append(".")
 sys.path.append("./py_audio2face")
 
 from py_audio2face.audio2face import Audio2Face
-
 from py_audio2face import utils
 
 class Audio2FaceApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Audio to Face Animation")
+        self.title("Audio to Face Application")
         # self.geometry("700x500")
 
         # Audio2Face instance
@@ -82,6 +81,13 @@ class Audio2FaceApp(tk.Tk):
         self.batch_process_button = ttk.Button(self.action_frame, text="批量生成", command=self.execute_batch)
         self.batch_process_button.pack(side='right', padx=10)
 
+        # 进度条
+        self.progress_bar = ttk.Progressbar(self.action_frame, orient="horizontal", length=300, mode='determinate')
+        self.progress_bar.pack(side='bottom', fill='x', expand=True, pady=10)
+
+        # 修改标注
+        self.github_label = ttk.Label(self.left_frame, text="调整功能可见 GitHub: https://github.com/syan2018/py_audio2face", anchor='w')
+        self.github_label.pack(side='bottom', fill='x', padx=10, pady=10)
 
         # Settings in right frame
         self.settings_frame = ttk.LabelFrame(self.right_frame, text="设置参数", padding="10")
@@ -95,8 +101,6 @@ class Audio2FaceApp(tk.Tk):
             self.settings_entries[key] = entry  # 保存输入框引用到字典
 
 
-
-        
         # 配置grid行列权重
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
@@ -209,7 +213,7 @@ class Audio2FaceApp(tk.Tk):
 
         self.a2f.generate_emotion_keys(self.default_settings)
 
-        self.a2f.export_blend_shape(output_path=output_path)
+        self.a2f.export_blend_shape(output_path=output_path, format="json")
 
         # print(self.a2f.get_emotion())
 
@@ -250,8 +254,11 @@ class Audio2FaceApp(tk.Tk):
                 os.makedirs(os.path.dirname(outfile_name))
 
             self.a2f.generate_emotion_keys(self.default_settings)
-            self.a2f.export_blend_shape(output_path=outfile_name)
-            print(self.a2f.get_emotion())
+            self.a2f.export_blend_shape(output_path=outfile_name, format="json")
+
+            # 更新进度条
+            self.progress_bar['value'] = 100 * (audio_files_tqdm.n + 1 / audio_files_tqdm.total)
+            self.update_idletasks()
 
 
         messagebox.showinfo("转换完成", f"文件夹 '{os.path.basename(dir_path)}' 已转换完成")
